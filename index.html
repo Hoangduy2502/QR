@@ -19,40 +19,52 @@
     #camera-select {
       margin: 20px auto;
       display: block;
+      text-align: center;
     }
   </style>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
   <h1 style="text-align: center;">QR Code Scanner</h1>
-  <select id="camera-select"></select>
+  <div id="camera-select">
+    <label for="camera-list">Select Camera: </label>
+    <select id="camera-list"></select>
+  </div>
   <div id="reader"></div>
   <div id="result">Result: <span id="output"></span></div>
 
   <script>
     const reader = new Html5Qrcode("reader");
     const resultElement = document.getElementById("output");
-    const cameraSelect = document.getElementById("camera-select");
-    let currentCameraId = null;
+    const cameraSelectElement = document.getElementById("camera-list");
 
-    const config = { fps: 10, qrbox: 250 };
+    const config = { 
+      fps: 10, 
+      qrbox: 250 
+    };
+
+    let isScanning = false;  // Biến kiểm tra trạng thái quét
 
     // Lấy danh sách camera
     Html5Qrcode.getCameras().then(devices => {
       if (devices && devices.length) {
-        devices.forEach((device, index) => {
+        // Thêm các camera vào dropdown
+        devices.forEach(device => {
           const option = document.createElement("option");
           option.value = device.id;
-          option.text = device.label || `Camera ${index + 1}`;
-          cameraSelect.appendChild(option);
+          option.textContent = device.label || `Camera ${cameraSelectElement.length + 1}`;
+          cameraSelectElement.appendChild(option);
         });
 
-        // Chọn camera sau nếu có
-        const backCamera = devices.find(device => device.label.toLowerCase().includes("back"));
-        cameraSelect.value = backCamera ? backCamera.id : devices[0].id;
+        // Khởi tạo quét với camera đầu tiên
+        startScanner(devices[0].id);
 
-        // Bắt đầu quét
-        startScanner(cameraSelect.value);
+        // Lắng nghe sự kiện thay đổi camera
+        cameraSelectElement.addEventListener("change", function() {
+          const selectedCameraId = cameraSelectElement.value;
+          startScanner(selectedCameraId);
+        });
+
       } else {
         alert("No cameras found.");
       }
@@ -60,10 +72,16 @@
 
     // Hàm bắt đầu quét
     function startScanner(cameraId) {
-      if (currentCameraId) {
-        reader.stop().catch(err => console.error("Error stopping scanner:", err));
+      if (isScanning) {
+        reader.stop().then(() => {
+          isScanning = false;
+          console.log("Scanner stopped.");
+        }).catch(err => {
+          console.error("Error stopping scanner:", err);
+        });
       }
 
+      // Bắt đầu quét lại
       reader.start(
         cameraId,
         config,
@@ -74,16 +92,12 @@
           console.log("Scanning error:", errorMessage);
         }
       ).then(() => {
-        currentCameraId = cameraId;
+        isScanning = true;  // Đánh dấu trạng thái quét đang diễn ra
+        console.log("Scanner started.");
       }).catch(err => {
-        console.error("Error starting QR scanner:", err);
+        console.error("Error starting scanner:", err);
       });
     }
-
-    // Thay đổi camera
-    cameraSelect.addEventListener("change", event => {
-      startScanner(event.target.value);
-    });
   </script>
 </body>
 </html>
