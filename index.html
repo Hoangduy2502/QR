@@ -16,46 +16,74 @@
       color: green;
       text-align: center;
     }
+    #camera-select {
+      margin: 20px auto;
+      display: block;
+    }
   </style>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
   <h1 style="text-align: center;">QR Code Scanner</h1>
+  <select id="camera-select"></select>
   <div id="reader"></div>
   <div id="result">Result: <span id="output"></span></div>
 
   <script>
     const reader = new Html5Qrcode("reader");
     const resultElement = document.getElementById("output");
+    const cameraSelect = document.getElementById("camera-select");
+    let currentCameraId = null;
 
-    const config = { fps: 10, qrbox: 250 }; // fps: tốc độ quét, qrbox: kích thước vùng quét
+    const config = { fps: 10, qrbox: 250 };
 
     // Lấy danh sách camera
     Html5Qrcode.getCameras().then(devices => {
       if (devices && devices.length) {
-        // Tìm camera sau dựa trên label
-        let backCamera = devices.find(device => device.label.toLowerCase().includes("back") || device.label.toLowerCase().includes("rear"));
-        const cameraId = backCamera ? backCamera.id : devices[0].id; // Nếu không tìm thấy, dùng camera đầu tiên
+        devices.forEach((device, index) => {
+          const option = document.createElement("option");
+          option.value = device.id;
+          option.text = device.label || `Camera ${index + 1}`;
+          cameraSelect.appendChild(option);
+        });
+
+        // Chọn camera sau nếu có
+        const backCamera = devices.find(device => device.label.toLowerCase().includes("back"));
+        cameraSelect.value = backCamera ? backCamera.id : devices[0].id;
 
         // Bắt đầu quét
-        reader.start(
-          cameraId,
-          config,
-          qrCodeMessage => {
-            // Xử lý kết quả khi quét được
-            resultElement.innerText = qrCodeMessage;
-          },
-          errorMessage => {
-            // Xử lý lỗi (không bắt buộc)
-            console.log("Scanning error:", errorMessage);
-          }
-        ).catch(err => {
-          console.error("Error starting QR scanner: ", err);
-        });
+        startScanner(cameraSelect.value);
       } else {
         alert("No cameras found.");
       }
     }).catch(err => console.error("Error fetching cameras: ", err));
+
+    // Hàm bắt đầu quét
+    function startScanner(cameraId) {
+      if (currentCameraId) {
+        reader.stop().catch(err => console.error("Error stopping scanner:", err));
+      }
+
+      reader.start(
+        cameraId,
+        config,
+        qrCodeMessage => {
+          resultElement.innerText = qrCodeMessage;
+        },
+        errorMessage => {
+          console.log("Scanning error:", errorMessage);
+        }
+      ).then(() => {
+        currentCameraId = cameraId;
+      }).catch(err => {
+        console.error("Error starting QR scanner:", err);
+      });
+    }
+
+    // Thay đổi camera
+    cameraSelect.addEventListener("change", event => {
+      startScanner(event.target.value);
+    });
   </script>
 </body>
 </html>
