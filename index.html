@@ -73,15 +73,19 @@
     // Hàm bắt đầu quét
     function startScanner(cameraId) {
       if (isScanning) {
-        reader.stop().then(() => {
-          isScanning = false;
-          console.log("Scanner stopped.");
+        stopScanner().then(() => {
+          // Chờ dừng quét trước khi bắt đầu quét lại
+          initiateScanner(cameraId);
         }).catch(err => {
           console.error("Error stopping scanner:", err);
         });
+      } else {
+        initiateScanner(cameraId);
       }
+    }
 
-      // Bắt đầu quét lại
+    // Hàm bắt đầu quét mới
+    function initiateScanner(cameraId) {
       reader.start(
         cameraId,
         config,
@@ -96,6 +100,23 @@
         console.log("Scanner started.");
       }).catch(err => {
         console.error("Error starting scanner:", err);
+      });
+    }
+
+    // Hàm dừng quét
+    function stopScanner() {
+      return new Promise((resolve, reject) => {
+        if (isScanning) {
+          reader.stop().then(() => {
+            isScanning = false;  // Đánh dấu trạng thái quét đã dừng
+            console.log("Scanner stopped.");
+            resolve();
+          }).catch(err => {
+            reject(err);
+          });
+        } else {
+          resolve();  // Nếu không có quét nào, trả về resolve ngay
+        }
       });
     }
   </script>
