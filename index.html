@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Code Scanner</title>
+  <style>
+    #reader {
+      width: 300px;
+      margin: auto;
+      border: 1px solid #ccc;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 1.2em;
+      color: green;
+    }
+  </style>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body>
+  <h1 style="text-align: center;">QR Code Scanner</h1>
+  <div id="reader"></div>
+  <div id="result">Result: <span id="output"></span></div>
+  <script>
+    const reader = new Html5Qrcode("reader");
+    const resultElement = document.getElementById("output");
+
+    const config = { fps: 10, qrbox: 250 }; // fps: tốc độ quét, qrbox: kích thước vùng quét
+
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices && devices.length) {
+        // Lấy camera đầu tiên (có thể chọn camera khác)
+        const cameraId = devices[0].id;
+
+        // Bắt đầu quét
+        reader.start(
+          cameraId,
+          config,
+          qrCodeMessage => {
+            // Xử lý kết quả khi quét được
+            resultElement.innerText = qrCodeMessage;
+          },
+          errorMessage => {
+            // Xử lý lỗi (không bắt buộc)
+            console.log(errorMessage);
+          }
+        ).catch(err => {
+          console.error("Error starting QR scanner: ", err);
+        });
+      } else {
+        alert("No cameras found.");
+      }
+    }).catch(err => console.error("Error fetching cameras: ", err));
+  </script>
+</body>
+</html>
