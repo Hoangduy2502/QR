@@ -14,6 +14,7 @@
       margin-top: 20px;
       font-size: 1.2em;
       color: green;
+      text-align: center;
     }
   </style>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
@@ -22,16 +23,19 @@
   <h1 style="text-align: center;">QR Code Scanner</h1>
   <div id="reader"></div>
   <div id="result">Result: <span id="output"></span></div>
+
   <script>
     const reader = new Html5Qrcode("reader");
     const resultElement = document.getElementById("output");
 
     const config = { fps: 10, qrbox: 250 }; // fps: tốc độ quét, qrbox: kích thước vùng quét
 
+    // Lấy danh sách camera
     Html5Qrcode.getCameras().then(devices => {
       if (devices && devices.length) {
-        // Lấy camera đầu tiên (có thể chọn camera khác)
-        const cameraId = devices[0].id;
+        // Tìm camera sau dựa trên label
+        let backCamera = devices.find(device => device.label.toLowerCase().includes("back") || device.label.toLowerCase().includes("rear"));
+        const cameraId = backCamera ? backCamera.id : devices[0].id; // Nếu không tìm thấy, dùng camera đầu tiên
 
         // Bắt đầu quét
         reader.start(
@@ -43,7 +47,7 @@
           },
           errorMessage => {
             // Xử lý lỗi (không bắt buộc)
-            console.log(errorMessage);
+            console.log("Scanning error:", errorMessage);
           }
         ).catch(err => {
           console.error("Error starting QR scanner: ", err);
